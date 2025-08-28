@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>baldchelor countdown</title>
+  <style>
+    :root {
+      --bg: #0b0b0f;
+      --card: #15151c;
+      --text: #e8e8f0;
+      --muted: #a4a4b3;
+      --accent: #79ffe1;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 50% -20%, #1f1f2a 0%, var(--bg) 60%);
+      color: var(--text);
+      display: grid; place-items: center;
+    }
+    .wrap { width: min(920px, 92vw); padding: 32px 24px; }
+    .card {
+      background: #15151c;
+      border: 1px solid #232334;
+      border-radius: 20px;
+      padding: 28px; box-shadow: 0 20px 50px rgba(0,0,0,.35);
+    }
+    h1 { margin: 0 0 10px; font-size: clamp(28px, 5vw, 44px); letter-spacing: 0.5px; }
+    p.tag { margin: 0 0 22px; color: var(--muted); font-size: 14px; }
+    .timer { display: grid; grid-template-columns: repeat(4, minmax(90px, 1fr)); gap: 14px; }
+    .unit { background: #0f0f16; border: 1px solid #252538; border-radius: 16px; padding: 16px; text-align: center; }
+    .num { font-variant-numeric: tabular-nums; font-size: clamp(34px, 7vw, 72px); line-height: 1; font-weight: 700; }
+    .label { margin-top: 8px; letter-spacing: .06em; text-transform: uppercase; font-size: 12px; color: var(--muted); }
+    .bar { height: 1px; background: linear-gradient(90deg, transparent, #2a2a3d, transparent); margin: 22px 0; border-radius: 999px; }
+    .quip { margin-top: 10px; font-size: 14px; color: var(--accent); text-align: center; min-height: 1.5em; }
+    footer { margin-top: 18px; font-size: 12px; color: var(--muted); text-align:center; }
+    canvas#confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    @media (max-width: 520px) { .timer { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card" role="group" aria-labelledby="title">
+      <h1 id="title">Baldchelor Party Countdown</h1>
+      <p class="tag">Counting down to <strong>September 5, 2025 at 12:00 PM Pacific Time</strong> (PDT, UTC−7).</p>
+
+      <div class="timer" aria-live="polite" aria-atomic="true">
+        <div class="unit"><div id="days" class="num">–</div><div class="label">Days</div></div>
+        <div class="unit"><div id="hours" class="num">–</div><div class="label">Hours</div></div>
+        <div class="unit"><div id="minutes" class="num">–</div><div class="label">Minutes</div></div>
+        <div class="unit"><div id="seconds" class="num">–</div><div class="label">Seconds</div></div>
+      </div>
+
+      <div class="bar"></div>
+      <div id="quip" class="quip">—</div>
+      <footer>Hourly confetti + fresh bald facts & gentle jokes. All love, no roast.</footer>
+    </section>
+  </main>
+
+  <canvas id="confetti"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script>
+    // Target: Sep 5, 2025 12:00 PM Pacific Time (PDT). PDT = UTC-7 on that date.
+    const targetUTCms = Date.UTC(2025, 8, 5, 19, 0, 0); // months 0-based; 19:00 UTC == 12:00 PDT
+
+    const baldFacts = [
+      "Zero bad-hair days. Ever.",
+      "Shower time: optimized. Towel time: legendary.",
+      "Aerodynamic for sprinting to last call.",
+      "Hats become fashion, not necessity.",
+      "Barber budget: reallocated to beverages.",
+      "SPF game on point — shiny is a feature.",
+      "Streamlined for maximum dance-floor spin rate.",
+      "Icon status: see Dwayne Johnson, Jason Statham, Vin Diesel."
+    ];
+
+    const baldJokes = [
+      "The grooming routine? Wash, moisturize, win.",
+      "More head for high-fives.",
+      "We don’t get bedhead — we get head bed.",
+      "Built-in party light: just add spotlight.",
+      "So sleek the limo gets jealous.",
+      "100% wind-resistance reduction* (*measured by groomsmen).",
+      "Chrome-dome = VIP dome.",
+      "No hat hair, just hat flair."
+    ];
+
+    // Merge and shuffle light content (no race-based jokes).
+    const quips = [...baldFacts, ...baldJokes];
+
+    const el = (id) => document.getElementById(id);
+    const fmt2 = new Intl.NumberFormat(undefined, { minimumIntegerDigits: 2 });
+
+    // Confetti setup
+    const confettiCanvas = document.getElementById('confetti');
+    const conf = confetti.create(confettiCanvas, { resize: true, useWorker: true });
+
+    let lastHour = null;
+
+    function tick(){
+      const now = Date.now();
+      let diff = targetUTCms - now;
+
+      if (diff <= 0) {
+        ['days','hours','minutes','seconds'].forEach(i => el(i).textContent = '00');
+        document.title = 'Baldchelor Countdown – finished!';
+        conf({ particleCount: 500, spread: 100, origin: { y: 0.6 } });
+        el('quip').textContent = "It’s party o’clock — deploy the tuxedos and sunscreen!";
+        return;
+      }
+
+      const sec = Math.floor(diff/1000);
+      const days = Math.floor(sec/86400);
+      const hours = Math.floor((sec%86400)/3600);
+      const mins = Math.floor((sec%3600)/60);
+      const secs = sec%60;
+
+      el('days').textContent = String(days).padStart(2, '0');
+      el('hours').textContent = fmt2.format(hours);
+      el('minutes').textContent = fmt2.format(mins);
+      el('seconds').textContent = fmt2.format(secs);
+      document.title = `Baldchelor – ${days}d ${hours}h ${mins}m ${secs}s`;
+
+      const currentHour = new Date().getHours();
+      if(currentHour !== lastHour){
+        lastHour = currentHour;
+        const msg = quips[Math.floor(Math.random()*quips.length)];
+        el('quip').textContent = msg;
+        conf({ particleCount: 240, spread: 80, origin: { y: 0.7 } });
+      }
+    }
+
+    tick();
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>
